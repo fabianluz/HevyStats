@@ -97,7 +97,3 @@ Visit `http://localhost:3000` in your browser.
 ---
 
 Developed by [Fabian Luz](https://github.com/fabianluz)
-
-```
-
-```
