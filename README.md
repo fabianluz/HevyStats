@@ -1,12 +1,4 @@
-Here is your professional **README.md** and the exact steps to push your code to your GitHub repository.
 
----
-
-### Part 1: The `README.md`
-
-Create a file named `README.md` in your project folder and paste the following markdown code. I have highlighted the technical aspects (ETL, Normalization) to make it attractive to recruiters.
-
-````markdown
 # HevyStats - Workout Analytics Dashboard 🏋️‍♂️
 
 A full-stack data visualization platform that transforms raw export data from the **Hevy** workout app into an interactive analytics dashboard.
@@ -36,8 +28,14 @@ The system ingests "dirty," denormalized CSV logs, processes them via a custom *
 - **Tools:** Multer (File Handling), CSV-Parser
 
 ## 📸 Screenshots
+<img width="3412" height="1682" alt="image" src="https://github.com/user-attachments/assets/16169b33-a5a9-435b-86aa-d886d323bf31" />
 
-_(You can upload screenshots to your repo later and link them here)_
+<img width="3404" height="1672" alt="image" src="https://github.com/user-attachments/assets/b80f02f3-0660-491a-8c05-41db39e362d8" />
+
+<img width="3372" height="1698" alt="image" src="https://github.com/user-attachments/assets/2721cb4a-ee04-4194-b902-0d9c313f50ac" />
+
+
+
 
 ## 🗄️ Database Schema
 
@@ -60,7 +58,7 @@ The project transforms flat file data into a **3NF (Third Normal Form)** structu
 git clone https://github.com/fabianluz/HevyStats.git
 cd HevyStats
 ```
-````
+
 
 ### 2. Install Dependencies
 
