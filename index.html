@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hevy Analytics Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --sidebar-width: 260px; --primary: #3498db; --dark: #2c3e50; }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', system-ui, sans-serif; }
+        
+        /* SIDEBAR */
+        .sidebar { height: 100vh; background: var(--dark); color: white; position: fixed; width: var(--sidebar-width); padding-top: 2rem; z-index: 1000; }
+        .sidebar h3 { font-weight: 700; letter-spacing: 1px; font-size: 1.4rem; }
+        .sidebar a { color: #bdc3c7; padding: 15px 30px; text-decoration: none; display: flex; align-items: center; transition: 0.3s; font-weight: 500; }
+        .sidebar a:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar a.active { background: rgba(52, 152, 219, 0.2); color: var(--primary); border-right: 4px solid var(--primary); }
+        .sidebar i { width: 25px; text-align: center; margin-right: 10px; }
+
+        /* CONTENT */
+        .main-content { margin-left: var(--sidebar-width); padding: 40px; }
+        .section { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* CARDS */
+        .stat-card { border: none; border-radius: 16px; background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.03); transition: transform 0.2s; overflow: hidden; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .icon-box { width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+        
+        /* LOGBOOK & SEARCH */
+        .filter-bar { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .accordion-button:not(.collapsed) { background-color: rgba(52, 152, 219, 0.1); color: var(--primary); }
+        .set-row.warmup { background-color: #fff3cd; color: #856404; font-style: italic; }
+        .badge-rpe { background-color: #95a5a6; color: white; font-size: 0.7em; padding: 4px 8px; border-radius: 6px; }
+
+        /* CHART */
+        canvas#progressChart { max-height: 450px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar d-none d-lg-block">
+        <h3 class="text-center mb-5"><i class="fas fa-dumbbell text-primary"></i> HevyPro</h3>
+        <nav>
+            <a href="#" onclick="showSection('dashboard', this)" class="active"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="#" onclick="showSection('analytics', this)"><i class="fas fa-chart-line"></i> Analytics</a>
+            <a href="#" onclick="showSection('history', this)"><i class="fas fa-book"></i> Logbook</a>
+            <a href="#" onclick="showSection('settings', this)"><i class="fas fa-cog"></i> Settings</a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        
+        <div id="dashboard" class="section active">
+            <h2 class="fw-bold mb-4 text-dark">Overview</h2>
+            
+            <div class="row g-4 mb-5">
+                <div class="col-md-4">
+                    <div class="stat-card p-4">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box bg-primary bg-opacity-10 text-primary me-3"><i class="fas fa-clipboard-check"></i></div>
+                            <div>
+                                <h6 class="text-muted text-uppercase small fw-bold mb-1">Total Sessions</h6>
+                                <h2 class="mb-0 fw-bold" id="stat-workouts">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card p-4">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box bg-success bg-opacity-10 text-success me-3"><i class="fas fa-calendar-week"></i></div>
+                            <div>
+                                <h6 class="text-muted text-uppercase small fw-bold mb-1">Avg Workouts/Week</h6>
+                                <h2 class="mb-0 fw-bold" id="stat-avg">0.0</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card p-4">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box bg-warning bg-opacity-10 text-warning me-3"><i class="fas fa-crown"></i></div>
+                            <div>
+                                <h6 class="text-muted text-uppercase small fw-bold mb-1">Heaviest Lift</h6>
+                                <h2 class="mb-0 fw-bold" id="stat-pr">0 kg</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card stat-card">
+                <div class="card-header bg-white border-0 py-3 px-4">
+                    <h5 class="mb-0 fw-bold"><i class="fas fa-history text-muted me-2"></i>Recent Activity</h5>
+                </div>
+                <div class="list-group list-group-flush" id="recent-list">
+                    </div>
+            </div>
+        </div>
+
+        <div id="analytics" class="section">
+            <h2 class="fw-bold mb-4 text-dark">Performance Analytics</h2>
+            <div class="stat-card p-4">
+                <div class="row mb-4 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Select Exercise</label>
+                        <select class="form-select form-select-lg border-0 bg-light" id="exerciseSelect" onchange="loadChart()">
+                            <option value="" disabled selected>Loading exercises...</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="position: relative; height: 50vh; width: 100%">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="history" class="section">
+            <h2 class="fw-bold mb-4 text-dark">Logbook</h2>
+            
+            <div class="filter-bar mb-4 d-flex flex-wrap gap-3 align-items-end">
+                <div class="flex-grow-1">
+                    <label class="form-label small text-muted">Search (Title/Notes)</label>
+                    <input type="text" id="filter-search" class="form-control" placeholder="e.g. Leg Day...">
+                </div>
+                <div>
+                    <label class="form-label small text-muted">Start Date</label>
+                    <input type="date" id="filter-start" class="form-control">
+                </div>
+                <div>
+                    <label class="form-label small text-muted">End Date</label>
+                    <input type="date" id="filter-end" class="form-control">
+                </div>
+                <button class="btn btn-primary px-4" onclick="loadHistory()"><i class="fas fa-filter me-2"></i>Filter</button>
+                <button class="btn btn-outline-secondary" onclick="clearFilters()">Reset</button>
+            </div>
+
+            <div id="history-container" class="accordion accordion-flush bg-white rounded shadow-sm">
+                </div>
+        </div>
+
+        <div id="settings" class="section">
+            <h2 class="fw-bold mb-4 text-dark">Settings</h2>
+            <div class="stat-card p-5" style="max-width: 600px;">
+                <h4 class="mb-3">Import Data</h4>
+                <p class="text-muted mb-4">Upload your latest <code>hevy_export.csv</code>. The system will automatically skip duplicate workouts.</p>
+                <div class="input-group mb-3">
+                    <input type="file" class="form-control" id="csvFile">
+                    <button class="btn btn-dark" onclick="uploadData()">Upload File</button>
+                </div>
+                <div id="uploadStatus"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const API = 'http://localhost:3000';
+        let chartInstance = null;
+
+        // --- NAVIGATION ---
+        function showSection(id, element) {
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if(element) {
+                document.querySelectorAll('.sidebar a').forEach(el => el.classList.remove('active'));
+                element.classList.add('active');
+            }
+
+            if(id === 'dashboard') loadDashboard();
+            if(id === 'history') loadHistory(); // Now respects filters
+            if(id === 'analytics') loadExercises();
+        }
+
+        // --- DASHBOARD ---
+        async function loadDashboard() {
+            try {
+                // Stats
+                const statsRes = await fetch(`${API}/api/stats`);
+                const stats = await statsRes.json();
+                document.getElementById('stat-workouts').innerText = stats.workouts;
+                document.getElementById('stat-avg').innerText = stats.avgPerWeek; // NEW
+                document.getElementById('stat-pr').innerText = stats.heaviest + ' kg';
+
+                // Recent
+                const recentRes = await fetch(`${API}/api/recent`);
+                const recent = await recentRes.json();
+                const list = document.getElementById('recent-list');
+                list.innerHTML = recent.map(w => `
+                    <div class="list-group-item d-flex justify-content-between align-items-center py-3 border-bottom">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-light rounded-circle p-2 me-3 text-secondary"><i class="fas fa-dumbbell"></i></div>
+                            <div>
+                                <h6 class="mb-0 fw-bold text-dark">${w.title}</h6>
+                                <small class="text-muted">${new Date(w.start_time).toLocaleDateString(undefined, {weekday:'short', year:'numeric', month:'short', day:'numeric'})}</small>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-light-gray"></i>
+                    </div>
+                `).join('');
+            } catch(e) { console.error(e); }
+        }
+
+        // --- ANALYTICS (AESTHETIC UPGRADE) ---
+        async function loadExercises() {
+            const select = document.getElementById('exerciseSelect');
+            if(select.options.length > 1) return;
+            const res = await fetch(`${API}/exercises`);
+            const data = await res.json();
+            select.innerHTML = '<option value="" disabled selected>Choose an exercise...</option>' + 
+                data.map(e => `<option value="${e.id}">${e.title}</option>`).join('');
+        }
+
+        async function loadChart() {
+            const id = document.getElementById('exerciseSelect').value;
+            const res = await fetch(`${API}/analytics/${id}`);
+            const data = await res.json();
+
+            if(chartInstance) chartInstance.destroy();
+            const ctx = document.getElementById('progressChart').getContext('2d');
+
+            // 1. Create Aesthetic Gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(52, 152, 219, 0.4)'); // Top: Blue
+            gradient.addColorStop(1, 'rgba(52, 152, 219, 0.0)'); // Bottom: Transparent
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Max Weight (kg)',
+                        data: data.weightData,
+                        borderColor: '#3498db',
+                        backgroundColor: gradient, // Use Gradient
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#3498db',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.4 // Smooth curves
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#2c3e50',
+                            padding: 10,
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 14 },
+                            displayColors: false,
+                            callbacks: { label: (c) => ` ${c.raw} kg` }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#95a5a6' } },
+                        y: { 
+                            grid: { borderDash: [5, 5], color: '#ecf0f1' }, 
+                            ticks: { color: '#95a5a6' },
+                            beginAtZero: false 
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- LOGBOOK (WITH SEARCH) ---
+        async function loadHistory() {
+            const search = document.getElementById('filter-search').value;
+            const start = document.getElementById('filter-start').value;
+            const end = document.getElementById('filter-end').value;
+
+            // Build Query String
+            const params = new URLSearchParams();
+            if(search) params.append('search', search);
+            if(start) params.append('startDate', start);
+            if(end) params.append('endDate', end);
+
+            const container = document.getElementById('history-container');
+            container.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin text-primary"></i></div>';
+
+            try {
+                const res = await fetch(`${API}/api/history?${params.toString()}`);
+                const workouts = await res.json();
+
+                if(workouts.length === 0) {
+                    container.innerHTML = '<div class="text-center p-4 text-muted">No workouts found matching filters.</div>';
+                    return;
+                }
+
+                container.innerHTML = workouts.map(w => `
+                    <div class="accordion-item border-0 border-bottom">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#w-${w.id}" onclick="loadWorkoutDetails(${w.id})">
+                                <div class="d-flex w-100 justify-content-between align-items-center me-3">
+                                    <div>
+                                        <span class="fw-bold text-dark">${w.title}</span>
+                                        <div class="small text-muted">${new Date(w.start_time).toDateString()}</div>
+                                    </div>
+                                    ${w.notes ? '<i class="fas fa-sticky-note text-warning"></i>' : ''}
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="w-${w.id}" class="accordion-collapse collapse" data-bs-parent="#history-container">
+                            <div class="accordion-body bg-light">
+                                ${w.notes ? `<div class="alert alert-warning py-2 small mb-3"><i class="fas fa-comment-alt me-2"></i>${w.notes}</div>` : ''}
+                                <div id="details-${w.id}"></div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) { console.error(e); }
+        }
+
+        function clearFilters() {
+            document.getElementById('filter-search').value = '';
+            document.getElementById('filter-start').value = '';
+            document.getElementById('filter-end').value = '';
+            loadHistory();
+        }
+
+        async function loadWorkoutDetails(wid) {
+            const div = document.getElementById(`details-${wid}`);
+            if(div.innerHTML.trim() !== "") return; // Already loaded
+
+            div.innerHTML = '<div class="text-center py-2"><i class="fas fa-circle-notch fa-spin text-muted"></i></div>';
+            
+            const res = await fetch(`${API}/api/history/${wid}`);
+            const sets = await res.json();
+            
+            // Group by Exercise
+            const groups = {};
+            sets.forEach(s => {
+                if(!groups[s.exercise_name]) groups[s.exercise_name] = [];
+                groups[s.exercise_name].push(s);
+            });
+
+            let html = '';
+            for (const [exercise, groupSets] of Object.entries(groups)) {
+                html += `<div class="bg-white p-3 rounded shadow-sm mb-3">`;
+                html += `<h6 class="fw-bold text-primary mb-2">${exercise}</h6>`;
+                html += `<div class="table-responsive"><table class="table table-sm table-borderless mb-0 align-middle">
+                    <thead class="text-muted small text-uppercase"><tr><th>Set</th><th>Kg</th><th>Reps</th><th>RPE</th><th>Notes</th></tr></thead>
+                    <tbody>`;
+                
+                groupSets.forEach(s => {
+                    const isWarmup = s.set_type === 'warmup';
+                    html += `<tr class="${isWarmup ? 'set-row warmup' : 'border-bottom border-light'}">
+                        <td><span class="badge bg-light text-dark border">${s.set_order + 1}</span></td>
+                        <td class="fw-bold">${s.weight_kg}</td>
+                        <td>${s.reps}</td>
+                        <td>${s.rpe ? `<span class="badge-rpe">${s.rpe}</span>` : '<span class="text-muted">-</span>'}</td>
+                        <td class="small text-muted fst-italic">${s.notes || ''}</td>
+                    </tr>`;
+                });
+                html += `</tbody></table></div></div>`;
+            }
+            div.innerHTML = html;
+        }
+
+        // --- UPLOAD ---
+        async function uploadData() {
+            const file = document.getElementById('csvFile').files[0];
+            if(!file) return alert("Select a file!");
+            const fd = new FormData();
+            fd.append('csvFile', file);
+            
+            document.getElementById('uploadStatus').innerHTML = '<div class="text-info mt-2"><i class="fas fa-spinner fa-spin"></i> Uploading...</div>';
+            try {
+                const res = await fetch(`${API}/upload`, { method:'POST', body:fd });
+                const text = await res.text();
+                document.getElementById('uploadStatus').innerHTML = `<div class="text-success mt-2 fw-bold"><i class="fas fa-check-circle"></i> ${text}</div>`;
+                setTimeout(() => location.reload(), 2000);
+            } catch(e) { alert("Upload Failed"); }
+        }
+
+        // Init
+        window.onload = () => loadDashboard();
+        
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
