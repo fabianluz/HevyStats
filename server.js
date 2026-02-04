@@ -11,11 +11,11 @@ const upload = multer({ dest: "uploads/" });
 app.use(cors());
 app.use(express.json());
 
-// ==========================================
-// 1. IMPORT ROUTE (Unchanged)
-// ==========================================
+
+
+
 app.post("/upload", upload.single("csvFile"), async (req, res) => {
-  // ... (Keep the exact same import logic as before) ...
+  
   if (!req.file) return res.status(400).send("No file uploaded.");
 
   const results = [];
@@ -86,18 +86,18 @@ app.post("/upload", upload.single("csvFile"), async (req, res) => {
     });
 });
 
-// ==========================================
-// 2. DASHBOARD & STATS (Updated)
-// ==========================================
 
-// Global Stats Cards (Updated for Avg Workouts/Week)
+
+
+
+
 app.get("/api/stats", async (req, res) => {
   try {
     const totalWorkouts = await pool.query("SELECT COUNT(*) FROM workouts");
     const heaviestLift = await pool.query("SELECT MAX(weight_kg) FROM sets");
 
-    // Calculate Average Workouts per Week
-    // Logic: Total Workouts / ((Last Date - First Date) in weeks)
+    
+    
     const dates = await pool.query(
       "SELECT MIN(start_time) as first, MAX(start_time) as last FROM workouts",
     );
@@ -110,7 +110,7 @@ app.get("/api/stats", async (req, res) => {
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       const diffWeeks = diffDays / 7;
 
-      // If less than 1 week of history, just show total workouts
+      
       avgPerWeek =
         diffWeeks < 1
           ? totalWorkouts.rows[0].count
@@ -119,7 +119,7 @@ app.get("/api/stats", async (req, res) => {
 
     res.json({
       workouts: totalWorkouts.rows[0].count,
-      avgPerWeek: avgPerWeek.toFixed(1), // Round to 1 decimal
+      avgPerWeek: avgPerWeek.toFixed(1), 
       heaviest: heaviestLift.rows[0].max,
     });
   } catch (err) {
@@ -138,7 +138,7 @@ app.get("/api/recent", async (req, res) => {
   }
 });
 
-// History List (Updated for SEARCH FILTERING)
+
 app.get("/api/history", async (req, res) => {
   try {
     const { search, startDate, endDate } = req.query;
@@ -165,7 +165,7 @@ app.get("/api/history", async (req, res) => {
       counter++;
     }
 
-    query += " ORDER BY start_time DESC LIMIT 100"; // Limit to 100 for performance
+    query += " ORDER BY start_time DESC LIMIT 100"; 
 
     const result = await pool.query(query, params);
     res.json(result.rows);
@@ -191,9 +191,9 @@ app.get("/api/history/:id", async (req, res) => {
   }
 });
 
-// ==========================================
-// 3. ANALYTICS (Unchanged)
-// ==========================================
+
+
+
 app.get("/exercises", async (req, res) => {
   const result = await pool.query("SELECT * FROM exercises ORDER BY title ASC");
   res.json(result.rows);
